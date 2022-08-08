@@ -30,7 +30,7 @@ function common.handledPullEvent(filter)
   local event
   repeat
     event = table.pack(os.pullEventRaw())
-    for _, reg in ipairs(handlers) do
+    for _, reg in pairs(handlers) do
       if event[1] == reg.event then
         reg.handler(event)
       end
@@ -54,7 +54,8 @@ end
 
 function common.formatItemName(itemspec)
   common.checkItemspec(itemspec)
-  local nbt = itemspec.nbt and " (+"..itemspec.nbt:sub(1,6)..")" or ""
+  local nbt = itemspec.nbt and #itemspec.nbt > 0 and
+    " (+"..itemspec.nbt:sub(1,6)..")" or ""
   return string.format("%6dx %s%s", itemspec.count,
     itemspec.displayName, nbt)
 end
@@ -186,22 +187,45 @@ end
 -- networking
 
 settings.define("solmiss.comm_modem", {
-  description = "The modem MISS should use to communicate.  Only required if more than one is present.",
+  description = "The modem SoLMISS should use to communicate.",
   type = "string",
 })
 
 settings.define("solmiss.comm_port", {
-  description = "The network port MISS should communicate on.",
+  description = "The network port SoLMISS should communicate on.",
   default = 3155,
   type = "number",
 })
 
+settings.define("solmiss.io_chest", {
+  description = "The input chest that this SoLMISS client should use.",
+  type = "string"
+})
+
 common.port = settings.get("solmiss.comm_port")
 
-function common.findWiredModems()
-  return table.pack(peripheral.find("modem", function(_, m)
-    return not m.isWireless()
-  end))
+function common.getModem()
+  local api_modem = settings.get("solmiss.comm_modem")
+  if not (api_modem and peripheral.isPresent(api_modem)) then
+    error("you must set solmiss.comm_modem to a valid peripheral", 0)
+
+  else
+    api_modem = peripheral.wrap(api_modem)
+    if api_modem.isWireless() then
+      error("cannot use a wireless modem for the SoLMISS API", 0)
+    end
+
+    return api_modem
+  end
+end
+
+function common.getIOChest()
+  local io_chest = settings.get("solmiss.io_chest")
+  if not (io_chest and peripheral.isPresent(io_chest)) then
+    error("you must set solmiss.io_chest to a valid peripheral", 0)
+  end
+
+  return io_chest
 end
 
 ---- Misc ----

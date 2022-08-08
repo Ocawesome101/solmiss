@@ -14,9 +14,10 @@ local index = {}
 
 -- chest peripheral wrapper cache
 local wrappers = {}
-local chest_names = {}
 
 local inputs = settings.get("solmiss.input_chests") or {}
+local api_port = settings.get("solmiss.comm_port") or 3155
+local api_modem = common.getModem()
 
 local maxItems = 0
 local totalItems = 0
@@ -27,13 +28,9 @@ local function build_index(show)
 
   local chests = peripheral.getNames()
   for i=#chests, 1, -1 do
-    if common.itemIn(inputs, chests[i]) or not chests[i]:match("chest") then
-      if common.itemIn(inputs, chests[i]) then
-        chest_names[chests[i]] = true
-      end
+    if not chests[i]:match("chest") then
       table.remove(chests, i)
     else
-      chest_names[chests[i]] = true
       wrappers[chests[i]] = peripheral.wrap(chests[i])
     end
     if show then common.progress(y+1, #chests - i, #chests) end
@@ -70,30 +67,32 @@ local function build_index(show)
   local total = 0
 
   for name, chest in pairs(wrappers) do
-    scanners[#scanners+1] = function()
-      maxItems = (chest.size() * chest.getItemLimit(1)) + maxItems
-      stage = stage + 1
-
-      if show then common.progress(y+1, stage, total) end
-    end
-
-    if not index[name] then
-      searchers[#searchers+1] = function()
-        local items = chest.list()
-
-        index[name] = { size = chest.size() }
-
-        for slot in pairs(items) do
-          local detail = chest.getItemDetail(slot)
-          detail.tags = detail.tags or {}
-          detail.nbt = detail.nbt or ""
-
-          totalItems = totalItems + detail.count
-          index[name][slot] = detail
-        end
-
+    if not common.itemIn(inputs, name) then
+      scanners[#scanners+1] = function()
+        maxItems = (chest.size() * chest.getItemLimit(1)) + maxItems
         stage = stage + 1
+
         if show then common.progress(y+1, stage, total) end
+      end
+
+      if not index[name] then
+        searchers[#searchers+1] = function()
+          local items = chest.list()
+
+          index[name] = { size = chest.size() }
+
+          for slot in pairs(items) do
+            local detail = chest.getItemDetail(slot)
+            detail.tags = detail.tags or {}
+            detail.nbt = detail.nbt or ""
+
+            totalItems = totalItems + detail.count
+            index[name][slot] = detail
+          end
+
+          stage = stage + 1
+          if show then common.progress(y+1, stage, total) end
+        end
       end
     end
   end
@@ -116,16 +115,13 @@ end
 
 build_index(true)
 
--- api exposed to clients
-local api = {}
-api.rebuild_index = build_index
-
 local function _find_location(item, nbt)
   nbt = nbt or ""
   for chest, slots in pairs(index) do
     for slot, detail in pairs(slots) do
       if slot ~= "size" then
-        if (detail.name == item or detail.tags[item]) and detail.nbt == nbt then
+        if (detail.name == item or detail.tags[item]) and
+            (detail.nbt or "") == nbt then
           return chest, slot, detail.maxCount - detail.count, detail.count
         end
       end
@@ -133,11 +129,187 @@ local function _find_location(item, nbt)
   end
 end
 
-function api.withdraw()
+local function withdraw(io, item, count, nbt)
+  while count > 0 do
+    local chest, slot, _, has = _find_location(item, nbt)
+    if not chest then return end
+    has = math.min(count, has)
+
+    index[chest][slot].count = index[chest][slot].count - has
+    if index[chest][slot].count <= 0 then
+      index[chest][slot] = nil
+    end
+
+    count = count - has
+    totalItems = totalItems - has
+    wrappers[chest].pushItems(io, slot, has)
+  end
+
+  return true
 end
 
-function api.deposit()
+-- api exposed to clients
+local api = {}
+api.rebuild_index = build_index
+
+function api.deposit(io, ...)
+  io = wrappers[io]
+  local movers = {}
+  local slots = table.pack(...)
+
+  for _, slot in ipairs(slots) do
+    movers[#movers+1] = function()
+      local item = io.getItemDetail(slot)
+      if item then
+        while item.count > 0 do
+          local should_break = true
+
+          for chest, slots in pairs(index) do
+            local did_deposit = false
+
+            if item.count == 0 then break end
+
+            for dslot, detail in pairs(slots) do
+              if dslot ~= "size" then
+                if detail.name == item.name and detail.count < detail.maxCount
+                    and detail.nbt == item.nbt then
+
+                  local depositing = math.min(item.count,
+                    detail.maxCount - detail.count)
+
+                  item.count = item.count - depositing
+                  detail.count = detail.count + depositing
+
+                  did_deposit = true
+                  should_break = false
+
+                  totalItems = totalItems + depositing
+                  io.pushItems(chest, slot, depositing, dslot)
+                end
+
+                if item.count == 0 then break end
+              end
+            end
+
+            if item.count == 0 then break end
+
+            if item.count > 0 and not did_deposit then
+              if #slots < slots.size then
+                should_break = false
+
+                slots[#slots+1] = {
+                  count = 0, name = item.name,
+                  displayName = item.displayName,
+                  maxCount = item.maxCount,
+                  nbt = item.nbt, tags = item.tags
+                }
+              end
+            end
+          end
+
+          if should_break then break end
+        end
+      end
+    end
+  end
+
+  parallel.waitForAll(table.unpack(movers))
 end
+
+function api.stored_items()
+  local items = {}
+
+  for _, chest in pairs(index) do
+    for dslot, detail in pairs(chest) do
+      if dslot ~= "size" then
+        local name = detail.name .. (detail.nbt or "")
+
+        if items[name] then
+          items[name].count = items[name].count + detail.count
+
+        else
+          items[name] = {
+            count = detail.count,
+            displayName = detail.displayName,
+            name = detail.name,
+            nbt = detail.nbt
+          }
+        end
+      end
+    end
+  end
+
+  return textutils.serialize(items)
+end
+
+function api.in_input_chest(io)
+  local items = {}
+
+  for dslot in pairs(wrappers[io].list()) do
+    if dslot ~= "size" then
+      local detail = wrappers[io].getItemDetail(dslot)
+      local name = detail.name .. (detail.nbt or "")
+
+      if items[name] then
+        items[name].count = items[name].count + detail.count
+        items[name].slots[#items[name].slots+1] = dslot
+
+      else
+        items[name] = {
+          count = detail.count,
+          displayName = detail.displayName,
+          name = detail.name,
+          nbt = detail.nbt,
+          slots = { dslot }
+        }
+      end
+    end
+  end
+
+  return textutils.serialize(items)
+end
+
+function api.withdraw(io, is)
+  withdraw(io, is.name, is.count, is.nbt)
+end
+
+function api.deposit_all()
+  local retrievers = {}
+  for i=1, #inputs, 1 do
+    retrievers[#retrievers+1] = function()
+      local slots = {}
+      for slot in pairs(wrappers[inputs[i]]).list() do
+        slots[#slots+1] = slot
+      end
+      api.deposit(inputs[i], table.unpack(slots))
+    end
+  end
+  parallel.waitForAll(retrievers)
+end
+
+function api.stored_percent()
+  return totalItems, maxItems
+end
+
+function api.ping()
+  return "pong"
+end
+
+api_modem.open(api_port)
+
+common.handleEvent("modem_message", function(event)
+  if event[3] == api_port then
+    local message = event[5]
+    local message_id = table.remove(message, 1)
+    local message_type = table.remove(message, 1)
+
+    if api[message[1]] and message_type == "solmiss_request" then
+      api_modem.transmit(api_port, api_port,
+        { message_id, "solmiss_reply",
+          api[message[1]](table.unpack(message, 2)) })
+    end
+  end
+end)
 
 common.menu {
   title = "SoLMISS Server Software",
@@ -148,7 +320,7 @@ common.menu {
         title = "Select chests",
       }
 
-      for key in pairs(chest_names) do
+      for key in pairs(wrappers) do
         names[#names+1] = {
           text = key,
           toggle = true,
@@ -170,6 +342,7 @@ common.menu {
 
       common.at(1,1).clear()
       build_index(true)
+      settings.save()
     end,
   },
   {

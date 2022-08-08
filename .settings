@@ -1,0 +1,7 @@
+{
+  [ "solmiss.comm_modem" ] = "left",
+  [ "solmiss.input_chests" ] = {
+    "minecraft:chest_73",
+  },
+  [ "solmiss.io_chest" ] = "minecraft:chest_73",
+}
