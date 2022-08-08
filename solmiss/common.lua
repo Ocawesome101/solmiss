@@ -185,18 +185,18 @@ end
 
 -- networking
 
-settings.define("slmiss.comm_modem", {
+settings.define("solmiss.comm_modem", {
   description = "The modem MISS should use to communicate.  Only required if more than one is present.",
   type = "string",
 })
 
-settings.define("slmiss.comm_port", {
+settings.define("solmiss.comm_port", {
   description = "The network port MISS should communicate on.",
   default = 3155,
   type = "number",
 })
 
-common.port = settings.get("slmiss.comm_port")
+common.port = settings.get("solmiss.comm_port")
 
 function common.findWiredModems()
   return table.pack(peripheral.find("modem", function(_, m)

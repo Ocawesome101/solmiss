@@ -1,6 +1,6 @@
--- SLMISS server
+-- SoLMISS server
 
-local common = require("slmiss.common")
+local common = require("solmiss.common")
 
 --common.handleEvent("modem_message")
 
@@ -16,13 +16,13 @@ local index = {}
 local wrappers = {}
 local chest_names = {}
 
-local inputs = settings.get("slmiss.input_chests") or {}
+local inputs = settings.get("solmiss.input_chests") or {}
 
 local maxItems = 0
 local totalItems = 0
 
-local function build_index()
-  io.write("Probing for chests... ")
+local function build_index(show)
+  if show then io.write("Probing for chests... ") end
   local x, y = term.getCursorPos()
 
   local chests = peripheral.getNames()
@@ -36,7 +36,7 @@ local function build_index()
       chest_names[chests[i]] = true
       wrappers[chests[i]] = peripheral.wrap(chests[i])
     end
-    common.progress(y+1, #chests - i, #chests)
+    if show then common.progress(y+1, #chests - i, #chests) end
   end
 
   for k, v in pairs(index) do
@@ -58,11 +58,11 @@ local function build_index()
     end
   end
 
-  common.at(x, y).write("done")
+  if show then common.at(x, y).write("done")
   print'\n'
 
   io.write("Reading chest sizes... ")
-  x, y = term.getCursorPos()
+  x, y = term.getCursorPos() end
 
   local scanners = {}
   local searchers = {}
@@ -74,7 +74,7 @@ local function build_index()
       maxItems = (chest.size() * chest.getItemLimit(1)) + maxItems
       stage = stage + 1
 
-      common.progress(y+1, stage, total)
+      if show then common.progress(y+1, stage, total) end
     end
 
     if not index[name] then
@@ -93,29 +93,54 @@ local function build_index()
         end
 
         stage = stage + 1
-        common.progress(y+1, stage, total)
+        if show then common.progress(y+1, stage, total) end
       end
     end
   end
 
   parallel.waitForAll(table.unpack(scanners))
+
+  if show then
   common.at(x, y).write("done")
   print'\n'
 
   stage = 0
   io.write("Reading items... ")
-  x, y = term.getCursorPos()
+  x, y = term.getCursorPos() end
 
   parallel.waitForAll(table.unpack(searchers))
 
-  common.at(x, y).write("done")
-  print'\n'
+  if show then common.at(x, y).write("done")
+  print'\n' end
 end
 
-build_index()
+build_index(true)
+
+-- api exposed to clients
+local api = {}
+api.rebuild_index = build_index
+
+local function _find_location(item, nbt)
+  nbt = nbt or ""
+  for chest, slots in pairs(index) do
+    for slot, detail in pairs(slots) do
+      if slot ~= "size" then
+        if (detail.name == item or detail.tags[item]) and detail.nbt == nbt then
+          return chest, slot, detail.maxCount - detail.count, detail.count
+        end
+      end
+    end
+  end
+end
+
+function api.withdraw()
+end
+
+function api.deposit()
+end
 
 common.menu {
-  title = "SLMISS Server Software",
+  title = "SoLMISS Server Software",
   {
     text = "Configure IO chests",
     action = function()
@@ -144,14 +169,14 @@ common.menu {
       common.menu(names)
 
       common.at(1,1).clear()
-      build_index()
+      build_index(true)
     end,
   },
   {
     text = "Rebuild index",
     action = function()
       common.at(1,1).clear()
-      build_index()
+      build_index(true)
     end,
   },
   {
@@ -160,5 +185,5 @@ common.menu {
   }
 }
 
-settings.set("slmiss.input_chests", inputs)
+settings.set("solmiss.input_chests", inputs)
 common.at(1,1).clear()
