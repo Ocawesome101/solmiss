@@ -278,17 +278,21 @@ function api.deposit_all()
   for i=1, #inputs, 1 do
     retrievers[#retrievers+1] = function()
       local slots = {}
-      for slot in pairs(wrappers[inputs[i]]).list() do
+      for slot in pairs(wrappers[inputs[i]].list()) do
         slots[#slots+1] = slot
       end
       api.deposit(inputs[i], table.unpack(slots))
     end
   end
-  parallel.waitForAll(retrievers)
+  parallel.waitForAll(table.unpack(retrievers))
 end
 
 function api.stored_percent()
   return totalItems, maxItems
+end
+
+function api.input_options()
+  return textutils.serialize(inputs)
 end
 
 function api.ping()

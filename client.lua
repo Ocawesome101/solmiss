@@ -4,29 +4,50 @@ local common = require("solmiss.common")
 
 local api_port = common.port
 local api_modem = common.getModem()
-local io_chest = common.getIOChest()
 
 api_modem.open(api_port)
 
-local function api_call(...)
+local function api_call(visible, ...)
   local id = math.random(111111, 999999)
   api_modem.transmit(api_port, api_port, {id, "solmiss_request", ...})
   local resp
-  local tid = os.startTimer(5)
+  local tid = os.startTimer(15)
+  if visible then
+    common.at(2, 2, colors.white).clear()
+    term.write("calling ")
+    term.setTextColor(colors.yellow)
+    term.write((...))
+    term.setTextColor(colors.white)
+    term.write("...")
+  end
   repeat
     resp = table.pack(common.handledPullEvent())
-    if resp[1] == "timer" and resp[2] == "tid" then
-      return
+    if resp[1] == "timer" and resp[2] == tid then
+      error("timed out", 0)
     end
   until resp[1] == "modem_message" and resp[3] == api_port and
     resp[5][1] == id
 
   os.cancelTimer(tid)
+  if visible then
+    term.setTextColor(colors.green)
+    term.write("OK")
+    os.sleep(1)
+  end
   return table.unpack(resp[5], 3)
 end
 
 print("Waiting for a server to come online...")
-repeat until api_call("ping")
+repeat until api_call(false, "ping")
+
+local io_chest
+local function select_input()
+  local chests = textutils.unserialize(api_call(false, "input_options"))
+  settings.set("solmiss.io_chest", common.selectOne("Select Input Chest",
+    chests, io_chest))
+end
+
+io_chest = common.getIOChest(select_input)
 
 local function withdraw_action(spec)
   return function()
@@ -37,7 +58,7 @@ local function withdraw_action(spec)
       common.at(2, 3, colors.white).write("Quantity? [0-"..spec.count.."]: ")
       count = tonumber(io.read())
     until count and count <= spec.count
-    api_call("withdraw", io_chest, {name=spec.name,
+    api_call(true, "withdraw", io_chest, {name=spec.name,
       count=count, nbt=spec.nbt})
     return true
   end
@@ -45,7 +66,7 @@ end
 
 local function deposit_action(spec)
   return function()
-    api_call("deposit", io_chest, table.unpack(spec.slots))
+    api_call(true, "deposit", io_chest, table.unpack(spec.slots))
     return true
   end
 end
@@ -56,7 +77,7 @@ menu = {
   {
     text = "Retrieve",
     action = function()
-      local items = textutils.unserialize(api_call("stored_items"))
+      local items = textutils.unserialize(api_call(false, "stored_items"))
 
       local prompt = {
         title = "Select items",
@@ -76,7 +97,8 @@ menu = {
   {
     text = "Deposit",
     action = function()
-      local items = textutils.unserialize(api_call("in_input_chest", io_chest))
+      local items = textutils.unserialize(api_call(false, "in_input_chest",
+        io_chest))
 
       local all = {}
 
@@ -106,8 +128,18 @@ menu = {
     end
   },
   {
-    text = "Rebuild item index",
-    action = function() api_call("rebuild_index") end
+    text = "Recall All Items",
+    action = function()
+      api_call(true, "deposit_all")
+    end
+  },
+  {
+    text = "Select Input Chest",
+    action = select_input,
+  },
+  {
+    text = "Rebuild Item Index",
+    action = function() api_call(true, "rebuild_index") end
   }
 }
 

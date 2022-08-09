@@ -205,27 +205,84 @@ settings.define("solmiss.io_chest", {
 common.port = settings.get("solmiss.comm_port")
 
 function common.getModem()
-  local api_modem = settings.get("solmiss.comm_modem")
-  if not (api_modem and peripheral.isPresent(api_modem)) then
-    error("you must set solmiss.comm_modem to a valid peripheral", 0)
+  local options = {}
 
-  else
-    api_modem = peripheral.wrap(api_modem)
-    if api_modem.isWireless() then
-      error("cannot use a wireless modem for the SoLMISS API", 0)
+  for _, name in ipairs(peripheral.getNames()) do
+    if peripheral.hasType(name, "modem") and not
+          peripheral.call(name, "isWireless") then
+      options[#options+1] = name
     end
-
-    return api_modem
   end
+
+  if #options == 0 then
+    error("no modem is present", 0)
+  end
+
+  local api_modem = settings.get("solmiss.comm_modem")
+  while not (api_modem and peripheral.isPresent(api_modem)) do
+    api_modem = common.selectOne("Select a modem", options)
+  end
+
+  settings.set("solmiss.comm_modem", api_modem)
+  api_modem = peripheral.wrap(api_modem)
+  if api_modem.isWireless() then
+    error("cannot use a wireless modem for the SoLMISS API", 0)
+  end
+
+  return api_modem
 end
 
-function common.getIOChest()
+function common.getIOChest(func)
   local io_chest = settings.get("solmiss.io_chest")
-  if not (io_chest and peripheral.isPresent(io_chest)) then
-    error("you must set solmiss.io_chest to a valid peripheral", 0)
+  while not (io_chest and peripheral.isPresent(io_chest)) do
+    if func then func() else
+    error("you must set solmiss.io_chest to a valid peripheral", 0) end
+    io_chest = settings.get("solmiss.io_chest")
   end
 
   return io_chest
+end
+
+function common.selectOne(title, list, default)
+  expect(1, title, "string")
+  expect(2, list, "table")
+
+  local names = {
+    title = title
+  }
+
+  for i=1, #list, 1 do
+    names[#names+1] = {
+      text = list[i],
+      toggle = true,
+      on = list[i] == default,
+      action = function(self)
+        if self.on then
+          for i=1, #names, 1 do
+            if names[i] ~= self and names[i].on then
+              names[i].on = false
+            end
+          end
+        else
+          local other_is_on = false
+          for i=1, #names, 1 do
+            if names[i].on then
+              other_is_on = true
+            end
+          end
+          if not other_is_on then self.on = true end
+        end
+      end
+    }
+  end
+
+  common.menu(names)
+
+  for i=1, #names, 1 do
+    if names[i].on then
+      return names[i].text
+    end
+  end
 end
 
 ---- Misc ----
