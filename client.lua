@@ -85,12 +85,21 @@ menu = {
 
       for _, spec in pairs(items) do
         prompt[#prompt+1] = {
+          spec = spec,
           text = common.formatItemName(spec),
           action = withdraw_action(spec),
         }
       end
 
       if #prompt == 0 then return end
+
+      table.sort(prompt, function(a, b)
+        if a.spec.count == b.spec.count then
+          return a.spec.displayName > b.spec.displayName
+        end
+        return a.spec.count > b.spec.count
+      end)
+
       common.menu(prompt)
     end
   },
@@ -140,6 +149,17 @@ menu = {
   {
     text = "Rebuild Item Index",
     action = function() api_call(true, "rebuild_index") end
+  },
+  {
+    text = "Update",
+    action = function()
+      common.update()
+      os.reboot()
+    end
+  },
+  {
+    text = "Exit",
+    action = function() return true end
   }
 }
 

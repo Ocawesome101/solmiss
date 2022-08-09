@@ -357,6 +357,13 @@ common.menu {
     end,
   },
   {
+    text = "Update",
+    action = function()
+      common.update(true)
+      os.reboot()
+    end
+  },
+  {
     text = "Exit",
     action = function() return true end
   }

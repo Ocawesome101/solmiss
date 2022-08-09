@@ -123,6 +123,7 @@ local function draw_menu(m)
           and (opts[i].on and colors.yellow or colors.lightGray)
           or  (opts[i].on and colors.orange or colors.gray)
     end
+    if (i - m.scroll + 3) > (h - 3) then break end
     at(2, i - m.scroll + 3, color).write(prefix .. (opts[i].text or ""))
   end
 
@@ -322,6 +323,42 @@ function common.progress(y, a, b)
   at(2, y, colors.white).write(("#"):rep(math.ceil(progress * (w - 2))))
   at(w, y, colors.yellow).write("]")
   term.setTextColor(colors.white)
+end
+
+-- updating
+local url = "https://raw.githubusercontent.com/ocawesome101/solmiss/primary/"
+
+local files_client = {
+  "solmiss/common.lua",
+  "client.lua"
+}
+
+local files_server = {
+  "solmiss/common.lua",
+  "server.lua"
+}
+
+local function dl(f)
+  local hand, err = http.get(url..f, nil, true)
+  if not hand then
+    error(err, 0)
+  end
+
+  local data = hand.readAll()
+  hand.close()
+
+  return data
+end
+
+-- TODO: improve somehow?
+function common.update(isServer)
+  local files = isServer and files_server or files_client
+
+  local common = dl("solmiss/common.lua")
+  local special = dl(isServer and "server.lua" or "client.lua")
+
+  io.open("/solmiss/common.lua", "w"):write(common):close()
+  io.open("/startup.lua", "w"):write(special):close()
 end
 
 return common
