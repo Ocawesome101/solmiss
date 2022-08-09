@@ -123,7 +123,7 @@ local function draw_menu(m)
           and (opts[i].on and colors.yellow or colors.lightGray)
           or  (opts[i].on and colors.orange or colors.gray)
     end
-    if (i - m.scroll + 3) > (h - 3) then break end
+    if (i - m.scroll + 3) > (h - 2) then break end
     at(2, i - m.scroll + 3, color).write(prefix .. (opts[i].text or ""))
   end
 
@@ -327,16 +327,6 @@ end
 
 -- updating
 local url = "https://raw.githubusercontent.com/ocawesome101/solmiss/primary/"
-
-local files_client = {
-  "solmiss/common.lua",
-  "client.lua"
-}
-
-local files_server = {
-  "solmiss/common.lua",
-  "server.lua"
-}
 
 local function dl(f)
   local hand, err = http.get(url..f, nil, true)
