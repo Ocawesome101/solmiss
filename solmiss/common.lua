@@ -276,6 +276,13 @@ function common.selectOne(title, list, default)
     }
   end
 
+  names[#names+1] = {
+    text = "Done",
+    action = function()
+      return true
+    end
+  }
+
   common.menu(names)
 
   for i=1, #names, 1 do

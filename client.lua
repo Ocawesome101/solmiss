@@ -144,3 +144,4 @@ menu = {
 }
 
 common.menu(menu)
+common.at(1,1).clear()
