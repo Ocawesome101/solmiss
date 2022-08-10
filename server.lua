@@ -79,24 +79,22 @@ local function build_index(show)
         if show then common.progress(y+1, stage, total) end
       end
 
-      if not index[name] then
-        searchers[#searchers+1] = function()
-          local items = chest.list()
+      searchers[#searchers+1] = function()
+        local items = chest.list()
 
-          index[name] = { size = chest.size() }
+        index[name] = { size = chest.size() }
 
-          for slot in pairs(items) do
-            local detail = chest.getItemDetail(slot)
-            detail.tags = detail.tags or {}
-            detail.nbt = detail.nbt or ""
+        for slot in pairs(items) do
+          local detail = chest.getItemDetail(slot)
+          detail.tags = detail.tags or {}
+          detail.nbt = detail.nbt or ""
 
-            totalItems = totalItems + detail.count
-            index[name][slot] = detail
-          end
-
-          stage = stage + 1
-          if show then common.progress(y+1, stage, total) end
+          totalItems = totalItems + detail.count
+          index[name][slot] = detail
         end
+
+        stage = stage + 1
+        if show then common.progress(y+1, stage, total) end
       end
     end
   end
