@@ -26,6 +26,8 @@ local function build_index(show)
   if show then io.write("Probing for chests... ") end
   local x, y = term.getCursorPos()
 
+  maxItems, totalItems = 0, 0
+
   local chests = peripheral.getNames()
   local wrappersIShouldUse = {}
   for i=#chests, 1, -1 do
