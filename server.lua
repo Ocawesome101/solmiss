@@ -27,11 +27,15 @@ local function build_index(show)
   local x, y = term.getCursorPos()
 
   local chests = peripheral.getNames()
+  local wrappersIShouldUse = {}
   for i=#chests, 1, -1 do
     if not chests[i]:match("chest") then
       table.remove(chests, i)
     else
       wrappers[chests[i]] = peripheral.wrap(chests[i])
+      if not common.itemIn(inputs, chests[i]) then
+        wrappersIShouldUse[chests[i]] = wrappers[chests[i]]
+      end
     end
     if show then common.progress(y+1, #chests - i, #chests) end
   end
@@ -66,7 +70,7 @@ local function build_index(show)
   local stage = 0
   local total = 0
 
-  for name, chest in pairs(wrappers) do
+  for name, chest in pairs(wrappersIShouldUse) do
     if not common.itemIn(inputs, name) then
       scanners[#scanners+1] = function()
         maxItems = (chest.size() * chest.getItemLimit(1)) + maxItems
