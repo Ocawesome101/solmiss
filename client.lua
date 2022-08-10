@@ -72,11 +72,19 @@ local function deposit_action(spec)
 end
 
 local menu
+
+local function update_status()
+  local total, max = api_call(false, "stored_percent")
+  menu.state = string.format("%d / %d items (%.2f%%)", total, max,
+    (total/max)*100)
+end
+
 menu = {
   title = "SoLMISS Client",
   {
     text = "Retrieve",
     action = function()
+      update_status()
       local items = textutils.unserialize(api_call(false, "stored_items"))
 
       local prompt = {
@@ -134,12 +142,14 @@ menu = {
         action = deposit_action({slots = all})
       })
       common.menu(prompt)
+      update_status()
     end
   },
   {
     text = "Recall All Items",
     action = function()
       api_call(true, "deposit_all")
+      update_status()
     end
   },
   {
@@ -148,7 +158,7 @@ menu = {
   },
   {
     text = "Rebuild Item Index",
-    action = function() api_call(true, "rebuild_index") end
+    action = function() api_call(true, "rebuild_index"); update_status(); end
   },
   {
     text = "Update",
@@ -163,5 +173,6 @@ menu = {
   }
 }
 
+update_status()
 common.menu(menu)
 common.at(1,1).clear()
