@@ -61,11 +61,13 @@ local function build_index(show)
     end
   end
 
-  if show then common.at(x, y).write("done")
-  print'\n'
+  if show then
+    common.at(x, y).write("done")
+    print'\n'
 
-  io.write("Reading chest sizes... ")
-  x, y = term.getCursorPos() end
+    io.write("Reading chest sizes... ")
+    x, y = term.getCursorPos()
+  end
 
   local scanners = {}
   local searchers = {}
@@ -104,17 +106,20 @@ local function build_index(show)
   parallel.waitForAll(table.unpack(scanners))
 
   if show then
-  common.at(x, y).write("done")
-  print'\n'
+    common.at(x, y).write("done")
+    print'\n'
 
-  stage = 0
-  io.write("Reading items... ")
-  x, y = term.getCursorPos() end
+    stage = 0
+    io.write("Reading items... ")
+    x, y = term.getCursorPos()
+  end
 
   parallel.waitForAll(table.unpack(searchers))
 
-  if show then common.at(x, y).write("done")
-  print'\n' end
+  if show then
+    common.at(x, y).write("done")
+    print'\n'
+  end
 end
 
 build_index(true)
