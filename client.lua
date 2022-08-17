@@ -32,7 +32,7 @@ local function api_call(visible, ...)
   if visible then
     if resp[5][3] == "warn" then
       term.setTextColor(colors.orange)
-      term.write("WARN")
+      term.write(resp[5][4] or "WARN")
     else
       term.setTextColor(colors.green)
       term.write("OK")

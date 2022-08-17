@@ -74,7 +74,9 @@ local function build_index(show)
     if not common.itemIn(inputs, name) then
       total = total + 1
       scanners[#scanners+1] = function()
-        maxItems = (chest.size() * chest.getItemLimit(1)) + maxItems
+        for i=1, chest.size() do
+          maxItems = chest.getItemLimit(i) + maxItems
+        end
         stage = stage + 1
 
         if show then common.progress(y+1, stage, total) end
@@ -170,6 +172,7 @@ function api.deposit(io, ...)
   slots.n = nil
 
   local warn
+  local reason
 
   for _, slot in pairs(slots) do
     movers[#movers+1] = function()
@@ -190,6 +193,8 @@ function api.deposit(io, ...)
 
                   local depositing = math.min(item.count,
                     detail.maxCount - detail.count)
+
+                  reason = "DEPOSITED " .. depositing
 
                   item.count = item.count - depositing
                   detail.count = detail.count + depositing
@@ -229,7 +234,7 @@ function api.deposit(io, ...)
 
   parallel.waitForAll(table.unpack(movers))
 
-  if warn then return "warn" end
+  if warn then return "warn", reason end
 end
 
 function api.stored_items()
