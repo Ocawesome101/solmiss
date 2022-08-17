@@ -76,6 +76,7 @@ local function build_index(show)
 
   for name, chest in pairs(wrappersIShouldUse) do
     if not common.itemIn(inputs, name) then
+      total = total + 1
       scanners[#scanners+1] = function()
         maxItems = (chest.size() * chest.getItemLimit(1)) + maxItems
         stage = stage + 1
@@ -129,7 +130,7 @@ local function _find_location(item, nbt)
   for chest, slots in pairs(index) do
     for slot, detail in pairs(slots) do
       if slot ~= "size" then
-        if (detail.name == item or detail.tags[item]) and
+        if ((detail.name == item) or detail.tags[item]) and
             (detail.nbt or "") == nbt then
           return chest, slot, detail.maxCount - detail.count, detail.count
         end
@@ -165,12 +166,18 @@ function api.deposit(io, ...)
   io = wrappers[io]
   local movers = {}
   local slots = table.pack(...)
+  if type(slots[1]) == "string" then
+    slots = textutils.unserialize(slots[1])
+  elseif type(slots[1]) == "table" then
+    slots = slots[1]
+  end
   slots.n = nil
 
   for _, slot in pairs(slots) do
     movers[#movers+1] = function()
       local item = io.getItemDetail(slot)
       if item then
+        print(slot)
         while item.count > 0 do
           local should_break = true
 
@@ -182,7 +189,7 @@ function api.deposit(io, ...)
             for dslot, detail in pairs(slots) do
               if dslot ~= "size" then
                 if detail.name == item.name and detail.count < detail.maxCount
-                    and detail.nbt == item.nbt then
+                    and (detail.nbt or "") == (item.nbt or "") then
 
                   local depositing = math.min(item.count,
                     detail.maxCount - detail.count)
