@@ -30,8 +30,13 @@ local function api_call(visible, ...)
 
   os.cancelTimer(tid)
   if visible then
-    term.setTextColor(colors.green)
-    term.write("OK")
+    if resp[5][3] == "warn" then
+      term.setTextColor(colors.orange)
+      term.write("WARN")
+    else
+      term.setTextColor(colors.green)
+      term.write("OK")
+    end
     os.sleep(1)
   end
   return table.unpack(resp[5], 3)
@@ -66,7 +71,7 @@ end
 
 local function deposit_action(spec)
   return function()
-    api_call(true, "deposit", io_chest, spec.slots)--textutils.serialize(spec.slots))
+    api_call(true, "deposit", io_chest, table.unpack(spec.slots))--textutils.serialize(spec.slots))
     return true
   end
 end

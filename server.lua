@@ -173,11 +173,12 @@ function api.deposit(io, ...)
   end
   slots.n = nil
 
+  local warn
+
   for _, slot in pairs(slots) do
     movers[#movers+1] = function()
       local item = io.getItemDetail(slot)
       if item then
-        print(slot)
         while item.count > 0 do
           local should_break = true
 
@@ -224,13 +225,15 @@ function api.deposit(io, ...)
             end
           end
 
-          if should_break then break end
+          if should_break then warn = true break end
         end
       end
     end
   end
 
   parallel.waitForAll(table.unpack(movers))
+
+  if warn then return "warn" end
 end
 
 function api.stored_items()
