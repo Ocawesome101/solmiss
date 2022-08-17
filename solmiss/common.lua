@@ -307,6 +307,14 @@ function common.removeFrom(tab, item)
   end
 end
 
+local valid = { "chest", "item_vault" }
+
+function common.inventoryFilter(name)
+  for i=1, #valid, 1 do
+    if name:match(valid[i]) then return true end
+  end
+end
+
 -- y is the y level at which to draw the bar
 -- a is either a percentage, or...
 -- ...if b is present, a/b*100 is the percentage.

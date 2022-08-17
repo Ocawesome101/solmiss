@@ -30,7 +30,7 @@ local function build_index(show)
 
   local chests = peripheral.getNames()
   for i=#chests, 1, -1 do
-    if not chests[i]:match("chest") then
+    if not common.inventoryFilter(chests[i]) then
       table.remove(chests, i)
     else
       wrappers[chests[i]] = peripheral.wrap(chests[i])
