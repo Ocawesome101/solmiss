@@ -214,16 +214,19 @@ function api.deposit(io, ...)
 
             if item.count > 0 and not did_deposit then
               reason = "NO SLOT FOUND"
-              if #slots < slots.size then
-                should_break = false
+              for i=1, #slots, 1 do
+                if slots[i] == nil then
+                  should_break = false
 
-                slots[#slots+1] = {
-                  count = 0, name = item.name,
-                  displayName = item.displayName,
-                  maxCount = item.maxCount,
-                  nbt = item.nbt, tags = item.tags
-                }
-                reason = "WTF"
+                  slots[i] = {
+                    count = 0, name = item.name,
+                    displayName = item.displayName,
+                    maxCount = item.maxCount,
+                    nbt = item.nbt, tags = item.tags
+                  }
+                  reason = "WTF"
+                  break
+                end
               end
             end
           end
