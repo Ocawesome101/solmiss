@@ -71,9 +71,7 @@ end
 
 local function deposit_action(spec)
   return function()
-    for i=1, #spec.slots, 1 do
-      api_call(true, "deposit", io_chest, spec.slots[i])--table.unpack(spec.slots))--textutils.serialize(spec.slots))
-    end
+    api_call(true, "deposit", io_chest, table.unpack(spec.slots))
     return true
   end
 end
