@@ -271,26 +271,31 @@ end
 function api.in_input_chest(io)
   local items = {}
 
+  local funcs = {}
   for dslot in pairs(wrappers[io].list()) do
     if dslot ~= "size" then
-      local detail = wrappers[io].getItemDetail(dslot)
-      local name = detail.name .. (detail.nbt or "")
+      funcs[#funcs+1] = function()
+        local detail = wrappers[io].getItemDetail(dslot)
+        local name = detail.name .. (detail.nbt or "")
 
-      if items[name] then
-        items[name].count = items[name].count + detail.count
-        items[name].slots[#items[name].slots+1] = dslot
+        if items[name] then
+          items[name].count = items[name].count + detail.count
+          items[name].slots[#items[name].slots+1] = dslot
 
-      else
-        items[name] = {
-          count = detail.count,
-          displayName = detail.displayName,
-          name = detail.name,
-          nbt = detail.nbt,
-          slots = { dslot }
-        }
+        else
+          items[name] = {
+            count = detail.count,
+            displayName = detail.displayName,
+            name = detail.name,
+            nbt = detail.nbt,
+            slots = { dslot }
+          }
+        end
       end
     end
   end
+
+  parallel.waitForAll(table.unpack(funcs))
 
   return textutils.serialize(items)
 end
