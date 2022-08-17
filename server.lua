@@ -165,6 +165,7 @@ function api.deposit(io, ...)
   io = wrappers[io]
   local movers = {}
   local slots = table.pack(...)
+  slots.n = nil
 
   for _, slot in pairs(slots) do
     movers[#movers+1] = function()
