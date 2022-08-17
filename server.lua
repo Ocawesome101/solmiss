@@ -214,7 +214,7 @@ function api.deposit(io, ...)
 
             if item.count > 0 and not did_deposit then
               reason = "NO SLOT FOUND"
-              for i=1, #slots, 1 do
+              for i=1, slots.size, 1 do
                 if slots[i] == nil then
                   should_break = false
 
