@@ -176,3 +176,4 @@ menu = {
 update_status()
 common.menu(menu)
 common.at(1,1).clear()
+settings.save()

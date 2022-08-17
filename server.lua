@@ -380,3 +380,4 @@ common.menu {
 
 settings.set("solmiss.input_chests", inputs)
 common.at(1,1).clear()
+settings.save()
