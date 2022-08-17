@@ -213,6 +213,7 @@ function api.deposit(io, ...)
             if item.count == 0 then break end
 
             if item.count > 0 and not did_deposit then
+              reason = "NO SLOT FOUND"
               if #slots < slots.size then
                 should_break = false
 
@@ -222,6 +223,7 @@ function api.deposit(io, ...)
                   maxCount = item.maxCount,
                   nbt = item.nbt, tags = item.tags
                 }
+                reason = "WTF"
               end
             end
           end
