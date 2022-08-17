@@ -166,7 +166,7 @@ function api.deposit(io, ...)
   local movers = {}
   local slots = table.pack(...)
 
-  for _, slot in ipairs(slots) do
+  for _, slot in pairs(slots) do
     movers[#movers+1] = function()
       local item = io.getItemDetail(slot)
       if item then
