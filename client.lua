@@ -7,11 +7,13 @@ local api_modem = common.getModem()
 
 api_modem.open(api_port)
 
+local TIMEOUT = 1
+
 local function api_call(visible, ...)
   local id = math.random(111111, 999999)
   api_modem.transmit(api_port, api_port, {id, "solmiss_request", ...})
   local resp
-  local tid = os.startTimer(15)
+  local tid = os.startTimer(TIMEOUT)
   if visible then
     common.at(2, 2, colors.white).clear()
     term.write("calling ")
@@ -43,7 +45,9 @@ local function api_call(visible, ...)
 end
 
 print("Waiting for a server to come online...")
-repeat until api_call(false, "ping")
+repeat io.write(".") until pcall(api_call, false, "ping")
+
+TIMEOUT = settings.get("solmiss.api_timeout") or 45
 
 local io_chest
 local function select_input()

@@ -22,8 +22,8 @@ local api_modem = common.getModem()
 local maxItems = 0
 local totalItems = 0
 
-local function build_index(show)
-  if show then io.write("Probing for chests... ") end
+local function build_index()
+  io.write("Probing for chests... ")
   local x, y = term.getCursorPos()
 
   maxItems, totalItems = 0, 0
@@ -35,7 +35,7 @@ local function build_index(show)
     else
       wrappers[chests[i]] = peripheral.wrap(chests[i])
     end
-    if show then common.progress(y+1, #chests - i, #chests) end
+    common.progress(y+1, #chests - i, #chests)
   end
 
 --[[  for k, v in pairs(index) do
@@ -57,13 +57,11 @@ local function build_index(show)
     end
   end]]
 
-  if show then
-    common.at(x, y).write("done")
-    print'\n'
+  common.at(x, y).write("done")
+  print'\n'
 
-    io.write("Reading chest sizes... ")
-    x, y = term.getCursorPos()
-  end
+  io.write("Reading chest sizes... ")
+  x, y = term.getCursorPos()
 
   local scanners = {}
   local searchers = {}
@@ -79,7 +77,7 @@ local function build_index(show)
         end
         stage = stage + 1
 
-        if show then common.progress(y+1, stage, total) end
+        common.progress(y+1, stage, total)
       end
 
       searchers[#searchers+1] = function()
@@ -97,28 +95,24 @@ local function build_index(show)
         end
 
         stage = stage + 1
-        if show then common.progress(y+1, stage, total) end
+        common.progress(y+1, stage, total)
       end
     end
   end
 
   parallel.waitForAll(table.unpack(scanners))
 
-  if show then
-    common.at(x, y).write("done")
-    print'\n'
+  common.at(x, y).write("done")
+  print'\n'
 
-    stage = 0
-    io.write("Reading items... ")
-    x, y = term.getCursorPos()
-  end
+  stage = 0
+  io.write("Reading items... ")
+  x, y = term.getCursorPos()
 
   parallel.waitForAll(table.unpack(searchers))
 
-  if show then
-    common.at(x, y).write("done")
-    print'\n'
-  end
+  common.at(x, y).write("done")
+  print'\n'
 end
 
 build_index(true)
