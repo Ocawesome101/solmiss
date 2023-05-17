@@ -44,6 +44,7 @@ local function api_call(visible, ...)
   return table.unpack(resp[5], 3)
 end
 
+common.at(1,1).clear()
 print("Waiting for a server to come online...")
 repeat io.write(".") until pcall(api_call, false, "ping")
 

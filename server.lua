@@ -115,6 +115,7 @@ local function build_index()
   print'\n'
 end
 
+common.at(1,1).clear()
 build_index(true)
 
 local function _find_location(item, nbt)
