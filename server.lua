@@ -132,6 +132,16 @@ local function _find_location(item, nbt)
   end
 end
 
+local function removeEmpty()
+  for chest, slots in pairs(index) do
+    for i=1, slots.size, 1 do
+      if slots[i] and slots[i].count == 0 then
+        slots[i] = nil
+      end
+    end
+  end
+end
+
 local function withdraw(io, item, count, nbt)
   while count > 0 do
     local chest, slot, _, has = _find_location(item, nbt)
@@ -147,6 +157,8 @@ local function withdraw(io, item, count, nbt)
     totalItems = totalItems - has
     wrappers[chest].pushItems(io, slot, has)
   end
+
+  removeEmpty()
 
   return true
 end
@@ -170,7 +182,7 @@ function api.deposit(io, ...)
   local reason
 
   for _, slot in pairs(slots) do
-    movers[#movers+1] = function()
+    --movers[#movers+1] = function()
       local item = io.getItemDetail(slot)
       if item then
         while item.count > 0 do
@@ -210,7 +222,7 @@ function api.deposit(io, ...)
             if item.count > 0 and not did_deposit then
               reason = "NO SLOT FOUND"
               for i=1, slots.size, 1 do
-                if slots[i] == nil then
+                if slots[i] == nil or slots[i].count == 0 then
                   should_break = false
 
                   slots[i] = {
@@ -229,10 +241,11 @@ function api.deposit(io, ...)
           if should_break then warn = true break end
         end
       end
-    end
+    --end
   end
 
   parallel.waitForAll(table.unpack(movers))
+  removeEmpty()
 
   if warn then return "warn", reason end
 end
