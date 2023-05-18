@@ -390,6 +390,7 @@ common.menu {
 
       common.at(1,1).clear()
       build_index()
+      settings.set("solmiss.input_chests", inputs)
       settings.save()
     end,
   },
@@ -413,6 +414,6 @@ common.menu {
   }
 }
 
-settings.set("solmiss.input_chests", inputs)
 common.at(1,1).clear()
+settings.set("solmiss.input_chests", inputs)
 settings.save()
