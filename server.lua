@@ -373,7 +373,9 @@ common.menu {
           text = key,
           toggle = true,
           on = common.itemIn(inputs, key),
+          changed = false,
           action = function(self)
+            self.changed = not self.changed
             if self.on then
               inputs[#inputs+1] = key
             else
@@ -388,8 +390,13 @@ common.menu {
 
       common.menu(names)
 
+      local changed = false
+      for i=1, #names do
+        changed = changed or names[i].changed
+      end
+
       common.at(1,1).clear()
-      build_index()
+      if changed then build_index() end
       settings.set("solmiss.input_chests", inputs)
       settings.save()
     end,
