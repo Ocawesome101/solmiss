@@ -22,7 +22,14 @@ local api_modem = common.getModem()
 local maxItems = 0
 local totalItems = 0
 
-local function build_index()
+local function send_progress(message_id, fraction)
+  api_modem.transmit(api_port, api_port,
+    { message_id, "solmiss_progress",
+      type(fraction) == "number" and tostring(math.floor(fraction * 100)).."%"
+      or tostring(fraction)})
+end
+
+local function build_index(message_id)
   io.write("Probing for chests... ")
   local x, y = term.getCursorPos()
 
@@ -36,28 +43,11 @@ local function build_index()
       wrappers[chests[i]] = peripheral.wrap(chests[i])
     end
     common.progress(y+1, #chests - i, #chests)
+    if message_id then send_progress(message_id, (#chests-i) / #chests) end
   end
 
---[[  for k, v in pairs(index) do
-    local existant = false
-    for i=1, #chests, 1 do
-      if chests[i] == k then
-        existant = true
-        break
-      end
-    end
-
-    if type(v) == "number" and not existant then
-      index[k] = nil
-      for _k, detail in pairs(v) do
-        if _k ~= "size" then
-          totalItems = totalItems - detail.count
-        end
-      end
-    end
-  end]]
-
   common.at(x, y).write("done")
+  if message_id then send_progress(message_id, "done") end
   print'\n'
 
   io.write("Reading chest sizes... ")
@@ -78,6 +68,7 @@ local function build_index()
         stage = stage + 1
 
         common.progress(y+1, stage, total)
+        if message_id then send_progress(message_id, stage/total) end
       end
 
       searchers[#searchers+1] = function()
@@ -96,6 +87,7 @@ local function build_index()
 
         stage = stage + 1
         common.progress(y+1, stage, total)
+        if message_id then send_progress(message_id, stage/total) end
       end
     end
   end
@@ -103,6 +95,7 @@ local function build_index()
   parallel.waitForAll(table.unpack(scanners))
 
   common.at(x, y).write("done")
+  if message_id then send_progress(message_id, "done") end
   print'\n'
 
   stage = 0
@@ -112,11 +105,12 @@ local function build_index()
   parallel.waitForAll(table.unpack(searchers))
 
   common.at(x, y).write("done")
+  if message_id then send_progress(message_id, "done") end
   print'\n'
 end
 
 common.at(1,1).clear()
-build_index(true)
+build_index()
 
 local function _find_location(item, nbt)
   nbt = nbt or ""
@@ -167,7 +161,7 @@ end
 local api = {}
 api.rebuild_index = build_index
 
-function api.deposit(io, ...)
+function api.deposit(message_id, io, ...)
   io = wrappers[io]
   local movers = {}
   local slots = table.pack(...)
@@ -181,67 +175,78 @@ function api.deposit(io, ...)
   local warn
   local reason
 
+  local count = 0
+  local deposited = 0
+  local details = {}
   for _, slot in pairs(slots) do
-    --movers[#movers+1] = function()
-      local item = io.getItemDetail(slot)
-      if item then
-        while item.count > 0 do
-          local should_break = true
+    local item = io.getItemDetail(slot)
+    if item then
+      count = count + item.count
+    end
+    details[slot] = item
+  end
 
-          for chest, slots in pairs(index) do
-            local did_deposit = false
+  for _, slot in pairs(slots) do
+    local item = details[slot]
+    if item then
+      while item.count > 0 do
+        local should_break = true
 
-            if item.count == 0 then break end
+        for chest, slots in pairs(index) do
+          local did_deposit = false
 
-            for dslot, detail in pairs(slots) do
-              if dslot ~= "size" then
-                if detail.name == item.name and detail.count < detail.maxCount
-                    and (detail.nbt or "") == (item.nbt or "") then
+          if item.count == 0 then break end
 
-                  local depositing = math.min(item.count,
-                    detail.maxCount - detail.count)
+          for dslot, detail in pairs(slots) do
+            if dslot ~= "size" then
+              if detail.name == item.name and detail.count < detail.maxCount
+                  and (detail.nbt or "") == (item.nbt or "") then
 
-                  reason = "DEPOSITED " .. depositing
+                local depositing = math.min(item.count,
+                  detail.maxCount - detail.count)
 
-                  item.count = item.count - depositing
-                  detail.count = detail.count + depositing
+                reason = "DEPOSITED " .. depositing
 
-                  did_deposit = true
-                  should_break = false
+                item.count = item.count - depositing
+                detail.count = detail.count + depositing
 
-                  totalItems = totalItems + depositing
-                  io.pushItems(chest, slot, depositing, dslot)
-                end
+                did_deposit = true
+                should_break = false
 
-                if item.count == 0 then break end
+                totalItems = totalItems + depositing
+                deposited = deposited + depositing
+                send_progress(message_id, deposited/count)
+                io.pushItems(chest, slot, depositing, dslot)
               end
-            end
 
-            if item.count == 0 then break end
-
-            if item.count > 0 and not did_deposit then
-              reason = "NO SLOT FOUND"
-              for i=1, slots.size, 1 do
-                if slots[i] == nil or slots[i].count == 0 then
-                  should_break = false
-
-                  slots[i] = {
-                    count = 0, name = item.name,
-                    displayName = item.displayName,
-                    maxCount = item.maxCount,
-                    nbt = item.nbt, tags = item.tags
-                  }
-                  reason = "WTF"
-                  break
-                end
-              end
+              if item.count == 0 then break end
             end
           end
 
-          if should_break then warn = true break end
+          if item.count == 0 then break end
+
+          if item.count > 0 and not did_deposit then
+            reason = "NO SLOT FOUND"
+            for i=1, slots.size, 1 do
+              if slots[i] == nil or slots[i].count == 0 then
+                should_break = false
+
+                slots[i] = {
+                  count = 0, name = item.name,
+                  displayName = item.displayName,
+                  maxCount = item.maxCount,
+                  nbt = item.nbt, tags = item.tags
+                }
+                reason = "WTF"
+                break
+              end
+            end
+          end
         end
+
+        if should_break then warn = true break end
       end
-    --end
+    end
   end
 
   parallel.waitForAll(table.unpack(movers))
@@ -312,7 +317,7 @@ function api.withdraw(io, is)
   withdraw(io, is.name, is.count, is.nbt)
 end
 
-function api.deposit_all()
+function api.deposit_all(message_id)
   local retrievers = {}
   for i=1, #inputs, 1 do
     retrievers[#retrievers+1] = function()
@@ -320,7 +325,7 @@ function api.deposit_all()
       for slot in pairs(wrappers[inputs[i]].list()) do
         slots[#slots+1] = slot
       end
-      api.deposit(inputs[i], table.unpack(slots))
+      api.deposit(message_id, inputs[i], table.unpack(slots))
     end
   end
   parallel.waitForAll(table.unpack(retrievers))
@@ -349,7 +354,7 @@ common.handleEvent("modem_message", function(event)
     if api[message[1]] and message_type == "solmiss_request" then
       api_modem.transmit(api_port, api_port,
         { message_id, "solmiss_reply",
-          api[message[1]](table.unpack(message, 2)) })
+          api[message[1]](message_id, table.unpack(message, 2)) })
     end
   end
 end)
@@ -384,7 +389,7 @@ common.menu {
       common.menu(names)
 
       common.at(1,1).clear()
-      build_index(true)
+      build_index()
       settings.save()
     end,
   },
@@ -392,13 +397,13 @@ common.menu {
     text = "Rebuild index",
     action = function()
       common.at(1,1).clear()
-      build_index(true)
+      build_index()
     end,
   },
   {
     text = "Update",
     action = function()
-      common.update(true)
+      common.update()
       os.reboot()
     end
   },

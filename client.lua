@@ -22,13 +22,17 @@ local function api_call(visible, ...)
     term.setTextColor(colors.white)
     term.write("...")
   end
+  local x, y = term.getCursorPos()
   repeat
     resp = table.pack(common.handledPullEvent())
     if resp[1] == "timer" and resp[2] == tid then
       error("timed out", 0)
+    elseif resp[1] == "modem_message" and resp[3] == api_port and
+          resp[5][1] == id and resp[5][2] == "solmiss_progress" then
+      common.at(x, y).write(tostring(resp[5][3]).."  ")
     end
   until resp[1] == "modem_message" and resp[3] == api_port and
-    resp[5][1] == id
+    resp[5][1] == id and resp[5][2] == "solmiss_reply"
 
   os.cancelTimer(tid)
   if visible then
