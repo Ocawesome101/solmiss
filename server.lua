@@ -281,7 +281,7 @@ function api.stored_items()
   return textutils.serialize(items)
 end
 
-function api.in_input_chest(io)
+function api.in_input_chest(_, io)
   local items = {}
 
   local funcs = {}
@@ -313,7 +313,7 @@ function api.in_input_chest(io)
   return textutils.serialize(items)
 end
 
-function api.withdraw(io, is)
+function api.withdraw(_, io, is)
   withdraw(io, is.name, is.count, is.nbt)
 end
 
