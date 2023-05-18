@@ -73,7 +73,9 @@ local function withdraw_action(spec)
       term.clear()
       common.at(2, 2, colors.yellow).write("Retrieving " .. spec.displayName)
       common.at(2, 3, colors.white).write("Quantity? [0-"..spec.count.."]: ")
-      count = tonumber(io.read())
+      local input = io.read()
+      count = tonumber(input)
+      if input == "*" then count = spec.count end
     until count and count <= spec.count
     api_call(true, "withdraw", io_chest, {name=spec.name,
       count=count, nbt=spec.nbt})
@@ -180,6 +182,14 @@ menu = {
   {
     text = "Update",
     action = function()
+      local server = false
+      repeat
+        common.at(2, 2, colors.white).clear()
+        term.write("Update server also? [y/N]: ")
+        local input = io.read()
+        server = input:lower() == "y"
+      until input:lower() == "y" or input:lower() == "n" or input == ""
+      if server then api_call(true, "update") end
       common.update()
       os.reboot()
     end

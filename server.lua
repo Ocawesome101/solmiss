@@ -353,6 +353,14 @@ function api.ping()
   return "pong"
 end
 
+function api.update(message_id)
+  api_modem.transmit(api_port, api_port,
+    { message_id, "solmiss_reply", true })
+  common.update(true)
+  os.reboot()
+  -- no need to return here
+end
+
 api_modem.open(api_port)
 
 common.handleEvent("modem_message", function(event)
