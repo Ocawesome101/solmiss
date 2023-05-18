@@ -95,7 +95,8 @@ local function draw_menu(m)
   end
 
   if (not m.search) or #m.search == 0 then
-    at(2, 3, colors.white).write("> (type to search)")
+    at(2, 3, colors.white).write("> ")
+    at(4, 3, colors.gray).write("(type to search)")
   else
     at(2, 3, colors.white).write("> " .. m.search:sub(-(w - 4)) .. "_ ")
   end
