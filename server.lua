@@ -57,7 +57,7 @@ local function build_index(message_id)
   end
 
   common.at(x, y).write("done")
-  if message_id then send_progress(message_id, "done") end
+  if message_id then send_progress(message_id, "probing done (1/3)") end
   print'\n'
 
   io.write("Reading chest sizes... ")
@@ -105,7 +105,7 @@ local function build_index(message_id)
   waitForAll(table.unpack(scanners))
 
   common.at(x, y).write("done")
-  if message_id then send_progress(message_id, "done") end
+  if message_id then send_progress(message_id, "sizes done (2/3)") end
   print'\n'
 
   stage = 0
@@ -115,7 +115,7 @@ local function build_index(message_id)
   waitForAll(table.unpack(searchers))
 
   common.at(x, y).write("done")
-  if message_id then send_progress(message_id, "done") end
+  if message_id then send_progress(message_id, "reading done (3/3)") end
   print'\n'
 end
 

@@ -30,6 +30,8 @@ local function api_call(visible, ...)
     elseif resp[1] == "modem_message" and resp[3] == api_port and
           resp[5][1] == id and resp[5][2] == "solmiss_progress" then
       common.at(x, y).write(tostring(resp[5][3]).."  ")
+      os.cancelTimer(tid)
+      tid = os.startTimer(TIMEOUT)
     end
   until resp[1] == "modem_message" and resp[3] == api_port and
     resp[5][1] == id and resp[5][2] == "solmiss_reply"
