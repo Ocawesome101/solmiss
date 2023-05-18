@@ -39,11 +39,12 @@ local function api_call(visible, ...)
     if resp[5][3] == "warn" then
       term.setTextColor(colors.orange)
       term.write(resp[5][4] or "WARN")
+      os.sleep(1)
     else
       term.setTextColor(colors.green)
       term.write("OK")
+      os.sleep(0.1)
     end
-    os.sleep(1)
   end
   return table.unpack(resp[5], 3)
 end

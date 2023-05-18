@@ -403,7 +403,7 @@ common.menu {
   {
     text = "Update",
     action = function()
-      common.update()
+      common.update(true)
       os.reboot()
     end
   },
