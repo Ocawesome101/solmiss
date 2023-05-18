@@ -19,6 +19,16 @@ local inputs = settings.get("solmiss.input_chests") or {}
 local api_port = settings.get("solmiss.comm_port") or 3155
 local api_modem = common.getModem()
 
+local waitForAll = parallel.waitForAll
+if settings.get("solmiss.no_parallel") then
+  waitForAll = function(...)
+    local funcs = table.pack(...)
+    for i=1, funcs.n do
+      funcs[i]()
+    end
+  end
+end
+
 local maxItems = 0
 local totalItems = 0
 
@@ -92,7 +102,7 @@ local function build_index(message_id)
     end
   end
 
-  parallel.waitForAll(table.unpack(scanners))
+  waitForAll(table.unpack(scanners))
 
   common.at(x, y).write("done")
   if message_id then send_progress(message_id, "done") end
@@ -102,7 +112,7 @@ local function build_index(message_id)
   io.write("Reading items... ")
   x, y = term.getCursorPos()
 
-  parallel.waitForAll(table.unpack(searchers))
+  waitForAll(table.unpack(searchers))
 
   common.at(x, y).write("done")
   if message_id then send_progress(message_id, "done") end
@@ -249,7 +259,7 @@ function api.deposit(message_id, io, ...)
     end
   end
 
-  parallel.waitForAll(table.unpack(movers))
+  waitForAll(table.unpack(movers))
   removeEmpty()
 
   if warn then return "warn", reason end
@@ -308,7 +318,7 @@ function api.in_input_chest(_, io)
     end
   end
 
-  parallel.waitForAll(table.unpack(funcs))
+  waitForAll(table.unpack(funcs))
 
   return textutils.serialize(items)
 end
@@ -328,7 +338,7 @@ function api.deposit_all(message_id)
       api.deposit(message_id, inputs[i], table.unpack(slots))
     end
   end
-  parallel.waitForAll(table.unpack(retrievers))
+  waitForAll(table.unpack(retrievers))
 end
 
 function api.stored_percent()

@@ -204,6 +204,12 @@ settings.define("solmiss.io_chest", {
   type = "string"
 })
 
+settings.define("solmiss.no_parallel", {
+  description = "Whether the SoLMISS server should disable parallelization of item interactions.  This is slower but more server friendly.",
+  default = false,
+  type = "boolean"
+})
+
 common.port = settings.get("solmiss.comm_port")
 
 function common.getModem()
