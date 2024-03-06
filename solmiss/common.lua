@@ -314,7 +314,7 @@ function common.removeFrom(tab, item)
   end
 end
 
-local valid = { "chest", "item_vault" }
+local valid = { "chest", "item_vault", "barrel" }
 
 function common.inventoryFilter(name)
   for i=1, #valid, 1 do
