@@ -64,19 +64,23 @@ local function select_input()
     chests, io_chest))
 end
 
-io_chest = common.getIOChest(select_input)
+io_chest = common.getIOChest(select_input, api_call)
 
 local function withdraw_action(spec)
   return function()
     local count
-    repeat
-      term.clear()
-      common.at(2, 2, colors.yellow).write("Retrieving " .. spec.displayName)
-      common.at(2, 3, colors.white).write("Quantity? [0-"..spec.count.."]: ")
-      local input = io.read()
-      count = tonumber(input)
-      if input == "*" then count = spec.count end
-    until count and count <= spec.count
+    if spec.count == 1 then
+      count = 1
+    else
+      repeat
+        term.clear()
+        common.at(2, 2, colors.yellow).write("Retrieving " .. spec.displayName)
+        common.at(2, 3, colors.white).write("Quantity? [0-"..spec.count.."]: ")
+        local input = io.read()
+        count = tonumber(input)
+        if input == "*" then count = spec.count end
+      until count and count <= spec.count
+    end
     api_call(true, "withdraw", io_chest, {name=spec.name,
       count=count, nbt=spec.nbt})
     return true
