@@ -86,7 +86,14 @@ local function draw_menu(m)
   term.clear()
   local w, h = term.getSize()
   if m.title then at(2, 2, colors.yellow).write(m.title) end
-  at(2, h - 1).write("\x18\x19 - navigate   \x1b - back   \x14\x1a - select")
+  if m.toggle then
+    navstr = "\x18\x19 navigate   \x14\x1b confirm   \x1a select"
+  else
+    navstr = "\x18\x19 navigate   \x1b back   \x1a select"
+  end
+
+  at(2, h-1).write(navstr)
+
   if m.state then at(1, h, colors.white).write(m.state) end
 
   local opts = m
@@ -151,12 +158,14 @@ function common.menu(menu)
       menu.scroll = 0
 
     elseif sig == "key" then
-      if cc == keys.enter or cc == keys.right then
+      if cc == keys.enter or cc == keys.right or cc == keys.tab then
         local selected = filtered[menu.selected]
 
         if type(selected.action) == "table" then
           common.menu(selected.action)
         elseif selected.toggle then
+          if cc == keys.enter then return end
+
           selected.on = not selected.on
           if selected.action then selected.action(selected) end
         elseif selected.action(selected) then

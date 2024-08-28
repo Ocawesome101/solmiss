@@ -112,13 +112,24 @@ menu = {
 
       local prompt = {
         title = "Select items",
+        toggle = true,
       }
+
+      local to_withdraw = {}
 
       for _, spec in pairs(items) do
         prompt[#prompt+1] = {
           spec = spec,
           text = common.formatItemName(spec),
-          action = withdraw_action(spec),
+          toggle = true,
+          on = false,
+          action = function(self)
+            if self.on then
+              to_withdraw[spec] = true
+            else
+              to_withdraw[spec] = nil
+            end
+          end
         }
       end
 
@@ -132,6 +143,10 @@ menu = {
       end)
 
       common.menu(prompt)
+
+      for spec in pairs(to_withdraw) do
+        withdraw_action(spec)()
+      end
     end
   },
   {
