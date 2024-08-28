@@ -225,8 +225,7 @@ function common.getModem()
   local options = {}
 
   for _, name in ipairs(peripheral.getNames()) do
-    if peripheral.hasType(name, "modem") and not
-          peripheral.call(name, "isWireless") then
+    if peripheral.hasType(name, "modem") then
       options[#options+1] = name
     end
   end
@@ -237,23 +236,26 @@ function common.getModem()
 
   local api_modem = settings.get("solmiss.comm_modem")
   while not (api_modem and peripheral.isPresent(api_modem)) do
-    api_modem = common.selectOne("Select a modem", options)
+    api_modem = common.selectOne(
+      "Select a modem for communications", options)
   end
 
   settings.set("solmiss.comm_modem", api_modem)
   api_modem = peripheral.wrap(api_modem)
-  if api_modem.isWireless() then
-    error("cannot use a wireless modem for the SoLMISS API", 0)
-  end
 
   return api_modem
 end
 
-function common.getIOChest(func)
+local function is_in(tab, key)
+  for i=1, #tab do if tab[i] == key then return true end end
+end
+
+function common.getIOChest(func, api_call)
   local io_chest = settings.get("solmiss.io_chest")
-  while not (io_chest and peripheral.isPresent(io_chest)) do
+  local io_chests = textutils.unserialize(api_call(false, "input_options"))
+  while not (io_chest and is_in(io_chests, io_chest)) do
     if func then func() else
-    error("you must set solmiss.io_chest to a valid peripheral", 0) end
+    error("you must set solmiss.io_chest to something valid", 0) end
     io_chest = settings.get("solmiss.io_chest")
   end
 
